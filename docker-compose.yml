@@ -1,0 +1,16 @@
+version: "3.2"
+
+services:
+  crm-to-postgres-data-pipeline:
+    image: crm-to-postgres-data-pipeline
+    build:
+      context: CRMToPostgresDataPipeline/
+      dockerfile: ./Dockerfile
+    ports:
+      - 3000:3000
+
+  crm-to-postgres-data-pipeline-test:
+    image: crm-to-postgres-data-pipeline-test
+    build:
+      context: .
+      dockerfile: CRMToPostgresDataPipeline.Tests/Dockerfile
