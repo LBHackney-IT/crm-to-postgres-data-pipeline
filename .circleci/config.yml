@@ -1,0 +1,42 @@
+version: 2.1
+
+orbs:
+  aws-cli: circleci/aws-cli@0.1.9
+  aws_assume_role: lbh-hackit/aws_assume_role@0.1.0
+
+executors:
+  docker-python:
+    docker:
+      - image: circleci/python:3.7
+  docker-dotnet:
+    docker:
+      - image: mcr.microsoft.com/dotnet/core/sdk:3.1
+
+jobs:
+  check-code-formatting:
+    executor: docker-dotnet
+    steps:
+      - checkout
+      - run:
+          name: Install dotnet format
+          command: dotnet tool install dotnet-format --tool-path ./dotnet-format-local/
+      - run:
+          name: Run formatter check
+          command: ./dotnet-format-local/dotnet-format --dry-run --check
+  build-and-test:
+    executor: docker-python
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          name: build
+          command: docker-compose build crm-to-postgres-data-pipeline-test
+      - run:
+          name: Run tests
+          command: docker-compose run crm-to-postgres-data-pipeline-test
+
+workflows:
+  check-and-deploy-development:
+    jobs:
+      - check-code-formatting
+      - build-and-test
