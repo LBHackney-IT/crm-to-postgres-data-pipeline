@@ -1,37 +1,26 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
+using CRMToPostgresDataPipeline.Infrastructure;
+using CRMToPostgresDataPipeline.lib;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 
 namespace CRMToPostgresDataPipeline
 {
-    public class Startup
+    public static class Startup
     {
         // This method gets called by the runtime. Use this method to add services to the container.
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
-        public void ConfigureServices(IServiceCollection services)
+        public static void ConfigureServices(this IServiceCollection services)
         {
-        }
+            services.AddScoped<IGetRecordsFromCrm, GetRecordsFromCrm>();
+            services.AddScoped<IMapResponseToObject, MapResponseToObject>();
+            services.AddScoped<ILoadRecordsIntoDatabase, LoadRecordsIntoDatabase>();
 
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
-        {
-            if (env.IsDevelopment())
-            {
-                app.UseDeveloperExceptionPage();
-            }
+            services.AddHttpClient();
 
-            app.UseRouting();
+            var connectionString = Environment.GetEnvironmentVariable("CONNECTION_STRING");
 
-            app.UseEndpoints(endpoints =>
-            {
-                endpoints.MapGet("/", async context => { await context.Response.WriteAsync("Hello World!"); });
-            });
+            services.AddDbContext<ResidentContactContext>(options => options.UseNpgsql(connectionString));
         }
     }
 }
