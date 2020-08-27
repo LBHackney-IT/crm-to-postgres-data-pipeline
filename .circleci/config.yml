@@ -97,7 +97,7 @@ jobs:
           stage: 'staging'
 
 workflows:
-  check-and-deploy-staging:
+  check-and-deploy-to-staging-from-development:
     jobs:
       - check-code-formatting
       - build-and-test
