@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using CRMToPostgresDataPipeline.Infrastructure;
 using CRMToPostgresDataPipeline.lib.Domain;
+using Newtonsoft.Json;
 using DbContactTypeLookup = CRMToPostgresDataPipeline.Infrastructure.ContactTypeLookup;
 using DbResident = CRMToPostgresDataPipeline.Infrastructure.Resident;
 
@@ -90,8 +91,8 @@ namespace CRMToPostgresDataPipeline.lib
                     {
                         ContactTypeLookupId = telephoneLookupId,
                         ContactValue = number,
-                        IsDefault = string.Equals(number, contactDetails.Default.telephone),
-                        IsActive = string.Equals(number, contactDetails.Default.telephone),
+                        IsDefault = string.Equals(number, contactDetails.Default?.telephone),
+                        IsActive = string.Equals(number, contactDetails.Default?.telephone),
                         DateAdded = DateTime.UtcNow,
                         //Making this the same as assumption is this would be run on an empty database
                         DateLastModified = DateTime.UtcNow,
@@ -103,25 +104,35 @@ namespace CRMToPostgresDataPipeline.lib
 
             if (residentContact.CommunicationDetails.mobile != null)
             {
-                var mobileDetails = (
-                    from number in contactDetails.mobile
-                    let mobileLookupId = _residentContactContext.ContactTypeLookups
-                        .First(x => x.Name.Equals("Mobile")).Id
-                    select new ContactDetail
-                    {
-                        ContactTypeLookupId = mobileLookupId,
-                        ContactValue = number,
-                        IsDefault = number.Equals(contactDetails.Default.mobile),
-                        IsActive = number.Equals(contactDetails.Default.mobile),
-                        DateAdded = DateTime.UtcNow,
-                        //Making this the same as assumption is this would be run on an empty database
-                        DateLastModified = DateTime.UtcNow,
-                        ResidentId = residentId
-                    });
+                try
                 {
-                    _residentContactContext.ContactDetails.AddRange(mobileDetails);
-                    _residentContactContext.SaveChanges();
+                    var mobileDetails = (
+                        from number in contactDetails.mobile
+                        let mobileLookupId = _residentContactContext.ContactTypeLookups
+                            .First(x => x.Name.Equals("Mobile")).Id
+                        select new ContactDetail
+                        {
+                            ContactTypeLookupId = mobileLookupId,
+                            ContactValue = number,
+                            IsDefault = number.Equals(contactDetails.Default?.mobile),
+                            IsActive = number.Equals(contactDetails.Default?.mobile),
+                            DateAdded = DateTime.UtcNow,
+                            //Making this the same as assumption is this would be run on an empty database
+                            DateLastModified = DateTime.UtcNow,
+                            ResidentId = residentId
+                        });
+                    {
+                        _residentContactContext.ContactDetails.AddRange(mobileDetails);
+                        _residentContactContext.SaveChanges();
+                    }
                 }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                    Console.Write(JsonConvert.SerializeObject(residentContact));
+                    throw;
+                }
+
             }
 
             if (residentContact.CommunicationDetails.email != null)
@@ -134,8 +145,8 @@ namespace CRMToPostgresDataPipeline.lib
                     {
                         ContactTypeLookupId = emailLookupId,
                         ContactValue = number,
-                        IsDefault = number.Equals(contactDetails.Default.email),
-                        IsActive = number.Equals(contactDetails.Default.email),
+                        IsDefault = number.Equals(contactDetails.Default?.email),
+                        IsActive = number.Equals(contactDetails.Default?.email),
                         DateAdded = DateTime.UtcNow,
                         //Making this the same as assumption is this would be run on an empty database
                         DateLastModified = DateTime.UtcNow,
