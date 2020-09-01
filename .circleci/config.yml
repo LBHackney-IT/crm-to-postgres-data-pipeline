@@ -90,11 +90,21 @@ jobs:
     steps:
       - assume-role-and-persist-workspace:
           aws-account: $AWS_ACCOUNT_STAGING
+  assume-role-production:
+    executor: docker-python
+    steps:
+      - assume-role-and-persist-workspace:
+          aws-account: $AWS_ACCOUNT_PRODUCTION
   deploy-to-staging:
     executor: docker-dotnet
     steps:
       - deploy-lambda:
           stage: 'staging'
+  deploy-to-production:
+    executor: docker-dotnet
+    steps:
+      - deploy-lambda:
+          stage: "production"
 
 workflows:
   check-and-deploy-to-staging-from-development:
@@ -114,3 +124,41 @@ workflows:
           filters:
             branches:
               only: development
+  check-and-deploy-to-staging-and-production:
+    jobs:
+      - check-code-formatting
+      - build-and-test
+      - assume-role-staging:
+          context: api-assume-role-staging-context
+          requires:
+            - build-and-test
+          filters:
+            branches:
+              only: master
+      - deploy-to-staging:
+          requires:
+            - assume-role-staging
+          filters:
+            branches:
+              only: master
+      - permit-production-release:
+          type: approval
+          requires:
+            - deploy-to-staging
+          filters:
+            branches:
+              only: master
+      - assume-role-production:
+          context: api-assume-role-production-context
+          requires:
+            - permit-production-release
+          filters:
+            branches:
+              only: master
+      - deploy-to-production:
+          requires:
+            - permit-production-release
+            - assume-role-production
+          filters:
+            branches:
+              only: master
