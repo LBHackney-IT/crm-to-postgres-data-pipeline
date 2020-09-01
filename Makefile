@@ -8,7 +8,7 @@ shell:
 
 .PHONY: test
 test:
-	docker-compose build crm-to-postgres-data-pipeline-test && docker-compose up crm-to-postgres-data-pipeline-test
+	docker-compose up test-database & docker-compose build crm-to-postgres-data-pipeline-test && docker-compose up crm-to-postgres-data-pipeline-test
 
 .PHONY: lint
 lint:

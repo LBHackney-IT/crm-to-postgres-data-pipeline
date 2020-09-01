@@ -12,6 +12,57 @@ executors:
     docker:
       - image: mcr.microsoft.com/dotnet/core/sdk:3.1
 
+references:
+  workspace_root: &workspace_root "~"
+  attach_workspace: &attach_workspace
+    attach_workspace:
+      at: *workspace_root
+
+commands:
+  assume-role-and-persist-workspace:
+    description: "assumes deployment role and persists credentials across jobs"
+    parameters:
+      aws-account:
+        type: string
+    steps:
+      - checkout
+      - aws_assume_role/assume_role:
+          account: <<parameters.aws-account>>
+          profile_name: default
+          role: 'LBH_Circle_CI_Deployment_Role'
+      - persist_to_workspace:
+          root: *workspace_root
+          paths:
+            - .aws
+  deploy-lambda:
+    description: "Deploys CRM Migration Lambda via Serverless"
+    parameters:
+      stage:
+        type: string
+    steps:
+      - *attach_workspace
+      - checkout
+      - setup_remote_docker
+      - run:
+          name: Install Node.js
+          command: |
+            curl -sL https://deb.nodesource.com/setup_13.x | bash -
+            apt-get update && apt-get install -y nodejs
+      - run:
+          name: Install serverless CLI
+          command: npm i -g serverless
+      - run:
+          name: Build lambda
+          command: |
+            cd ./CRMToPostgresDataPipeline/
+            chmod +x ./build.sh
+            ./build.sh
+      - run:
+          name: Deploy lambda
+          command: |
+            cd ./CRMToPostgresDataPipeline/
+            sls deploy --stage <<parameters.stage>> --conceal
+
 jobs:
   check-code-formatting:
     executor: docker-dotnet
@@ -34,9 +85,32 @@ jobs:
       - run:
           name: Run tests
           command: docker-compose run crm-to-postgres-data-pipeline-test
+  assume-role-staging:
+    executor: docker-python
+    steps:
+      - assume-role-and-persist-workspace:
+          aws-account: $AWS_ACCOUNT_STAGING
+  deploy-to-staging:
+    executor: docker-dotnet
+    steps:
+      - deploy-lambda:
+          stage: 'staging'
 
 workflows:
-  check-and-deploy-development:
+  check-and-deploy-to-staging-from-development:
     jobs:
       - check-code-formatting
       - build-and-test
+      - assume-role-staging:
+          context: api-assume-role-staging-context
+          requires:
+            - build-and-test
+          filters:
+            branches:
+              only: development
+      - deploy-to-staging:
+          requires:
+            - assume-role-staging
+          filters:
+            branches:
+              only: development

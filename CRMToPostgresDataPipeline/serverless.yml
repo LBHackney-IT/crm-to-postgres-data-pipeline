@@ -1,0 +1,94 @@
+service: crm-to-postgres-pipeline
+provider:
+  name: aws
+  runtime: dotnetcore3.1
+  vpc: ${self:custom.vpc.${opt:stage}}
+  stage: ${opt:stage}
+  region: eu-west-2
+
+package:
+  artifact: ./bin/release/netcoreapp3.1/CRMToPostgresDataPipeline.zip
+
+functions:
+  MigrateCRMDataToPostgres:
+    name: ${self:service}-${self:provider.stage}
+    timeout: 300
+    handler: CRMToPostgresDataPipeline::CRMToPostgresDataPipeline.lib.Handler::Execute
+    role: lambdaExecutionRole
+    environment:
+      CONNECTION_STRING: Host=${ssm:/resident-contact-api/${self:provider.stage}/postgres-hostname};Port=${ssm:/resident-contact-api/${self:provider.stage}/postgres-port};Database=${ssm:/resident-contact-api/${self:provider.stage}/postgres-database};Username=${ssm:/resident-contact-api/${self:provider.stage}/postgres-username};Password=${ssm:/resident-contact-api/${self:provider.stage}/postgres-password}
+      TOKEN_GEN_PASSWORD: ${ssm:/crm-access-token-gen/${self:provider.stage}/endpoint-password}
+      TOKEN_GEN_URL: ${ssm:/crm-access-token-gen/${self:provider.stage}/endpoint}
+      CRM_URL: ${ssm:/crm-dynamics/${self:provider.stage}/api-url}
+
+resources:
+  Resources:
+    lambdaExecutionRole:
+      Type: AWS::IAM::Role
+      Properties:
+        Path: /${self:service}/${self:provider.stage}/
+        RoleName: ${self:service}-lambdaExecutionRole
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service:
+                  - lambda.amazonaws.com
+              Action: sts:AssumeRole
+        ManagedPolicyArns:
+          - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+        Policies:
+          - PolicyName: manageLogs
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - logs:CreateLogGroup
+                    - logs:CreateLogStream
+                    - logs:PutLogEvents
+                  Resource:
+                    - 'Fn::Join':
+                        - ':'
+                        - - 'arn:aws:logs'
+                          - Ref: 'AWS::Region'
+                          - Ref: 'AWS::AccountId'
+                          - 'log-group:/aws/lambda/*:*:*'
+                - Effect: "Allow"
+                  Action:
+                    - "s3:PutObject"
+                    - "s3:GetObject"
+                  Resource:
+                    Fn::Join:
+                      - ""
+                      - - "arn:aws:s3:::"
+                        - "Ref": "ServerlessDeploymentBucket"
+          - PolicyName: lambdaInvocation
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - "lambda:InvokeFunction"
+                  Resource: "*"
+custom:
+  vpc:
+    development:
+      securityGroupIds:
+        - sg-0a457bf4e6eda31de
+      subnetIds:
+        - subnet-0deabb5d8fb9c3446
+        - subnet-000b89c249f12a8ad
+    staging:
+      securityGroupIds:
+        - sg-04fa13c6d25c5f5cc
+      subnetIds:
+        - subnet-06d3de1bd9181b0d7
+        - subnet-0ed7d7713d1127656
+    production:
+      securityGroupIds:
+        - sg-0631be752dee5711a
+      subnetIds:
+        - subnet-01d3657f97a243261
+        - subnet-0b7b8fea07efabf34

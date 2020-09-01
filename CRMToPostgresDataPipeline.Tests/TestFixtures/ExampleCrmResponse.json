@@ -1,0 +1,27 @@
+{
+  "@odata.context": "TEST",
+  "value": [
+    {
+      "@odata.etag": "TEST",
+      "hackney_communicationdetails": "{\"telephone\":[\"2222222222\"],\"mobile\":[\"11111111111\",\"00000000000\"],\"email\":[\"test.hello@hackney.gov.uk\",\"testtest.default@hackney.gov.uk\"],\"default\":{\"email\":\"testtest.default@hackney.gov.uk\",\"mobile\":\"11111111111\",\"telephone\":2222222222}}",
+      "firstname": "Hello",
+      "lastname": "Goodbye",
+      "birthdate": "2000-12-01",
+      "hackney_gender": null,
+      "hackney_houseref": "000000",
+      "hackney_personno": "1",
+      "contactid": "aaaaaa-1111"
+    },
+    {
+      "@odata.etag": "TEST2",
+      "hackney_communicationdetails": "{\"default\":{\"email\":null,\"mobile\":\"01111111111\",\"telephone\":null},\"telephone\":[],\"mobile\":[\"0700033867- new\",\"01111111111\"],\"email\":[]}",
+      "firstname": "Golden",
+      "lastname": "Rose",
+      "birthdate": null,
+      "hackney_gender": "M",
+      "hackney_houseref": "111111",
+      "hackney_personno": "6",
+      "contactid": "bbbb-33333"
+    }
+  ]
+}
