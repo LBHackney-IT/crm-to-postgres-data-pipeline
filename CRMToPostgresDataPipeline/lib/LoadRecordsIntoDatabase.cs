@@ -84,7 +84,7 @@ namespace CRMToPostgresDataPipeline.lib
             if (residentContact.CommunicationDetails.telephone != null)
             {
                 var contactDetailsToAdd = (
-                    from number in contactDetails.telephone
+                    from number in contactDetails.telephone.Where(t => t != null)
                     let telephoneLookupId = _residentContactContext.ContactTypeLookups
                         .First(x => x.Name.Equals("Telephone")).Id
                     select new ContactDetail
@@ -107,7 +107,7 @@ namespace CRMToPostgresDataPipeline.lib
                 try
                 {
                     var mobileDetails = (
-                        from number in contactDetails.mobile
+                        from number in contactDetails.mobile.Where(m => m != null)
                         let mobileLookupId = _residentContactContext.ContactTypeLookups
                             .First(x => x.Name.Equals("Mobile")).Id
                         select new ContactDetail
@@ -138,7 +138,7 @@ namespace CRMToPostgresDataPipeline.lib
             if (residentContact.CommunicationDetails.email != null)
             {
                 var emails = (
-                    from number in contactDetails.email
+                    from number in contactDetails.email.Where(e => e != null)
                     let emailLookupId = _residentContactContext.ContactTypeLookups
                         .First(x => x.Name.Equals("Email")).Id
                     select new ContactDetail
