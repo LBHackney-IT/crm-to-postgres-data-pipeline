@@ -44,12 +44,7 @@ namespace CRMToPostgresDataPipeline.lib
 
         private void CheckContactLookUpTablesArePresent()
         {
-            var listOfContactTypes = new List<string> { "Telephone", "Email", "Mobile" };
-
-            foreach (var contactType in listOfContactTypes)
-            {
-                AddContactTypeIfAbsent(contactType);
-            }
+            new List<string> { "Telephone", "Email", "Mobile" }.ForEach(AddContactTypeIfAbsent);
         }
 
         private void AddContactTypeIfAbsent(string contactType)
@@ -66,12 +61,7 @@ namespace CRMToPostgresDataPipeline.lib
 
         private void CheckSourceSystemLookUpTablesArePresent()
         {
-            var listOfSourceSystemTypes = new List<string> { "UH", "CRM" };
-
-            foreach (var sourceSystemType in listOfSourceSystemTypes)
-            {
-                AddSourceSystemTypeIfAbsent(sourceSystemType);
-            }
+            new List<string> { "UH", "CRM" }.ForEach(AddSourceSystemTypeIfAbsent);
         }
 
         private void AddSourceSystemTypeIfAbsent(string sourceSystemType)
@@ -92,60 +82,67 @@ namespace CRMToPostgresDataPipeline.lib
 
             if (residentContact.CommunicationDetails.telephone != null)
             {
-                foreach (var contactDetail in from number in contactDetails.telephone
-                                              let telephoneLookupId = _residentContactContext.ContactTypeLookups.FirstOrDefault(x => x.Name.Equals("Telephone")).Id
-                                              select new ContactDetail
-                                              {
-                                                  ContactTypeLookupId = telephoneLookupId,
-                                                  ContactValue = number,
-                                                  IsDefault = string.Equals(number, contactDetails.Default.telephone),
-                                                  IsActive = string.Equals(number, contactDetails.Default.telephone),
-                                                  DateAdded = DateTime.UtcNow,
-                                                  DateLastModified = DateTime.UtcNow, //Making this the same as assumption is this would be run on an empty database
-                                                  ResidentId = residentId
-                                              })
-                {
-                    _residentContactContext.ContactDetails.Add(contactDetail);
-                    _residentContactContext.SaveChanges();
-                }
+                var contactDetailsToAdd = (
+                    from number in contactDetails.telephone
+                    let telephoneLookupId = _residentContactContext.ContactTypeLookups
+                        .First(x => x.Name.Equals("Telephone")).Id
+                    select new ContactDetail
+                    {
+                        ContactTypeLookupId = telephoneLookupId,
+                        ContactValue = number,
+                        IsDefault = string.Equals(number, contactDetails.Default.telephone),
+                        IsActive = string.Equals(number, contactDetails.Default.telephone),
+                        DateAdded = DateTime.UtcNow,
+                        //Making this the same as assumption is this would be run on an empty database
+                        DateLastModified = DateTime.UtcNow,
+                        ResidentId = residentId
+                    });
+                _residentContactContext.ContactDetails.AddRange(contactDetailsToAdd);
+                _residentContactContext.SaveChanges();
             }
 
             if (residentContact.CommunicationDetails.mobile != null)
             {
-                foreach (var contactDetail in from number in contactDetails.mobile
-                                              let mobileLookupId = _residentContactContext.ContactTypeLookups.FirstOrDefault(x => x.Name.Equals("Mobile")).Id
-                                              select new ContactDetail
-                                              {
-                                                  ContactTypeLookupId = mobileLookupId,
-                                                  ContactValue = number,
-                                                  IsDefault = number.Equals(contactDetails.Default.mobile),
-                                                  IsActive = number.Equals(contactDetails.Default.mobile),
-                                                  DateAdded = DateTime.UtcNow,
-                                                  DateLastModified = DateTime.UtcNow, //Making this the same as assumption is this would be run on an empty database
-                                                  ResidentId = residentId
-                                              })
+                var mobileDetails = (
+                    from number in contactDetails.mobile
+                    let mobileLookupId = _residentContactContext.ContactTypeLookups
+                        .First(x => x.Name.Equals("Mobile")).Id
+                    select new ContactDetail
+                    {
+                        ContactTypeLookupId = mobileLookupId,
+                        ContactValue = number,
+                        IsDefault = number.Equals(contactDetails.Default.mobile),
+                        IsActive = number.Equals(contactDetails.Default.mobile),
+                        DateAdded = DateTime.UtcNow,
+                        //Making this the same as assumption is this would be run on an empty database
+                        DateLastModified = DateTime.UtcNow,
+                        ResidentId = residentId
+                    });
                 {
-                    _residentContactContext.ContactDetails.Add(contactDetail);
+                    _residentContactContext.ContactDetails.AddRange(mobileDetails);
                     _residentContactContext.SaveChanges();
                 }
             }
 
             if (residentContact.CommunicationDetails.email != null)
             {
-                foreach (var contactDetail in from number in contactDetails.email
-                                              let emailLookupId = _residentContactContext.ContactTypeLookups.FirstOrDefault(x => x.Name.Equals("Email")).Id
-                                              select new ContactDetail
-                                              {
-                                                  ContactTypeLookupId = emailLookupId,
-                                                  ContactValue = number,
-                                                  IsDefault = number.Equals(contactDetails.Default.email),
-                                                  IsActive = number.Equals(contactDetails.Default.email),
-                                                  DateAdded = DateTime.UtcNow,
-                                                  DateLastModified = DateTime.UtcNow, //Making this the same as assumption is this would be run on an empty database
-                                                  ResidentId = residentId
-                                              })
+                var emails = (
+                    from number in contactDetails.email
+                    let emailLookupId = _residentContactContext.ContactTypeLookups
+                        .First(x => x.Name.Equals("Email")).Id
+                    select new ContactDetail
+                    {
+                        ContactTypeLookupId = emailLookupId,
+                        ContactValue = number,
+                        IsDefault = number.Equals(contactDetails.Default.email),
+                        IsActive = number.Equals(contactDetails.Default.email),
+                        DateAdded = DateTime.UtcNow,
+                        //Making this the same as assumption is this would be run on an empty database
+                        DateLastModified = DateTime.UtcNow,
+                        ResidentId = residentId
+                    });
                 {
-                    _residentContactContext.ContactDetails.Add(contactDetail);
+                    _residentContactContext.ContactDetails.AddRange(emails);
                     _residentContactContext.SaveChanges();
                 }
             }
@@ -156,10 +153,10 @@ namespace CRMToPostgresDataPipeline.lib
             var externalDetails = residentContact.DetailsFromExternalRecords;
 
             var uhExternalSystemLookUpId =
-                _residentContactContext.ExternalSystemLookups.FirstOrDefault(x => x.Name.Equals("UH")).Id;
+                _residentContactContext.ExternalSystemLookups.First(x => x.Name.Equals("UH")).Id;
 
             var crmExternalSystemLookUpId =
-                _residentContactContext.ExternalSystemLookups.FirstOrDefault(x => x.Name.Equals("CRM")).Id;
+                _residentContactContext.ExternalSystemLookups.First(x => x.Name.Equals("CRM")).Id;
 
             if (externalDetails.HouseRef != null)
             {
