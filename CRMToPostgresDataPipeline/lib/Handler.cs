@@ -39,10 +39,11 @@ namespace CRMToPostgresDataPipeline.lib
                     LambdaLogger.Log("Getting records from CRM API");
                     var apiResponse = getRecordsFromCrm.GetRecords(token).Result;
 
-                    LambdaLogger.Log("Mapping APU response to domain objects");
+                    LambdaLogger.Log("Mapping API response to domain objects");
                     var mappedResponse = mapResponseToObjects.MapJsonResponseToRecordValue(apiResponse);
                     var dataToLoad = mapResponseToObjects.CreateResidentContactToLoadIntoDatabase(mappedResponse);
 
+                    LambdaLogger.Log($"Loading {dataToLoad.Count} records into the database");
                     LambdaLogger.Log("Loading data into the database");
                     loadDataIntoDb.LoadDataIntoDB(dataToLoad);
                 }
